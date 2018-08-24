@@ -6,6 +6,7 @@ import android.graphics.Bitmap.CompressFormat;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.ImageFormat;
+import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.graphics.drawable.BitmapDrawable;
@@ -199,6 +200,15 @@ public class BitmapUtil {
     BitmapFactory.Options options = getImageDimensions(inputStream);
     return new Pair<>(options.outWidth, options.outHeight);
   }
+
+  public static void rotate(byte[] data, int degrees) {
+    Bitmap storedBitmap = BitmapFactory.decodeByteArray(data, 0, data.length, null);
+
+    Matrix mat = new Matrix();
+    mat.postRotate(degrees);  // angle is the desired angle you wish to rotate
+    Bitmap.createBitmap(storedBitmap, 0, 0, storedBitmap.getWidth(), storedBitmap.getHeight(), mat, true);
+  }
+
 
   public static InputStream toCompressedJpeg(Bitmap bitmap) {
     ByteArrayOutputStream thumbnailBytes = new ByteArrayOutputStream();

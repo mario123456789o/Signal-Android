@@ -51,6 +51,8 @@ import android.support.v7.app.AlertDialog;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
+
+import org.thoughtcrime.securesms.camera.CameraActivity;
 import org.thoughtcrime.securesms.logging.Log;
 import android.util.Pair;
 import android.view.KeyEvent;
@@ -233,6 +235,7 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
   private static final int PICK_LOCATION       = 9;
   private static final int PICK_GIF            = 10;
   private static final int SMS_DEFAULT         = 11;
+  private static final int PICK_CAMERA         = 12;
 
   private   GlideRequests               glideRequests;
   protected ComposeText                 composeText;
@@ -494,6 +497,9 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
       break;
     case SMS_DEFAULT:
       initializeSecurity(isSecureText, isDefaultSms);
+      break;
+    case PICK_CAMERA:
+      setMedia(data.getData(), MediaType.IMAGE, 0, 0);
       break;
     }
   }
@@ -2099,21 +2105,32 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
   private class QuickCameraToggleListener implements OnClickListener {
     @Override
     public void onClick(View v) {
-      if (!quickAttachmentDrawer.isShowing()) {
-        Permissions.with(ConversationActivity.this)
-                   .request(Manifest.permission.CAMERA)
-                   .ifNecessary()
-                   .withRationaleDialog(getString(R.string.ConversationActivity_to_capture_photos_and_video_allow_signal_access_to_the_camera), R.drawable.ic_photo_camera_white_48dp)
-                   .withPermanentDenialDialog(getString(R.string.ConversationActivity_signal_needs_the_camera_permission_to_take_photos_or_video))
-                   .onAllGranted(() -> {
-                     composeText.clearFocus();
-                     container.show(composeText, quickAttachmentDrawer);
-                   })
-                   .onAnyDenied(() -> Toast.makeText(ConversationActivity.this, R.string.ConversationActivity_signal_needs_camera_permissions_to_take_photos_or_video, Toast.LENGTH_LONG).show())
-                   .execute();
-      } else {
-        container.hideAttachedInput(false);
-      }
+      Permissions.with(ConversationActivity.this)
+                 .request(Manifest.permission.CAMERA)
+                 .ifNecessary()
+                 .withRationaleDialog(getString(R.string.ConversationActivity_to_capture_photos_and_video_allow_signal_access_to_the_camera), R.drawable.ic_photo_camera_white_48dp)
+                 .withPermanentDenialDialog(getString(R.string.ConversationActivity_signal_needs_the_camera_permission_to_take_photos_or_video))
+                 .onAllGranted(() -> {
+                   composeText.clearFocus();
+                   startActivityForResult(new Intent(ConversationActivity.this, CameraActivity.class), PICK_CAMERA);
+                 })
+                 .onAnyDenied(() -> Toast.makeText(ConversationActivity.this, R.string.ConversationActivity_signal_needs_camera_permissions_to_take_photos_or_video, Toast.LENGTH_LONG).show())
+                 .execute();
+//      if (!quickAttachmentDrawer.isShowing()) {
+//        Permissions.with(ConversationActivity.this)
+//                   .request(Manifest.permission.CAMERA)
+//                   .ifNecessary()
+//                   .withRationaleDialog(getString(R.string.ConversationActivity_to_capture_photos_and_video_allow_signal_access_to_the_camera), R.drawable.ic_photo_camera_white_48dp)
+//                   .withPermanentDenialDialog(getString(R.string.ConversationActivity_signal_needs_the_camera_permission_to_take_photos_or_video))
+//                   .onAllGranted(() -> {
+//                     composeText.clearFocus();
+//                     container.show(composeText, quickAttachmentDrawer);
+//                   })
+//                   .onAnyDenied(() -> Toast.makeText(ConversationActivity.this, R.string.ConversationActivity_signal_needs_camera_permissions_to_take_photos_or_video, Toast.LENGTH_LONG).show())
+//                   .execute();
+//      } else {
+//        container.hideAttachedInput(false);
+//      }
     }
   }
 
