@@ -13,7 +13,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="64dp"
+        android:layout_marginBottom="16dp"
         android:layout_gravity="center_horizontal|bottom"
         android:gravity="center"
         android:orientation="horizontal">
@@ -32,6 +32,5 @@
             android:text="Flip"/>
 
     </LinearLayout>
-
 
 </FrameLayout>

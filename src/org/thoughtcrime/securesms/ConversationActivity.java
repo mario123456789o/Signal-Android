@@ -236,6 +236,7 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
   private static final int PICK_GIF            = 10;
   private static final int SMS_DEFAULT         = 11;
   private static final int PICK_CAMERA         = 12;
+  private static final int EDIT_IMAGE          = 13;
 
   private   GlideRequests               glideRequests;
   protected ComposeText                 composeText;
