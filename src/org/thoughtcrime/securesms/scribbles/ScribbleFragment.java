@@ -99,6 +99,14 @@ public class ScribbleFragment extends Fragment implements ScribbleHud.EventListe
     scribbleView.setImage(glideRequests, getArguments().getParcelable(KEY_IMAGE_URI));
   }
 
+  public boolean isEmojiKeyboardVisible() {
+    return scribbleHud.isInputOpen();
+  }
+
+  public void dismissEmojiKeyboard() {
+    scribbleHud.dismissEmojiKeyboard();
+  }
+
   private void addSticker(final Bitmap pica) {
     Util.runOnMain(() -> {
       Layer       layer  = new Layer();

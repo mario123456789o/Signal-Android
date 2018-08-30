@@ -62,6 +62,16 @@ public class CameraActivity extends AppCompatActivity implements CameraFragment.
   }
 
   @Override
+  public void onBackPressed() {
+    ScribbleFragment fragment = (ScribbleFragment) getSupportFragmentManager().findFragmentByTag(TAG_EDITOR);
+    if (fragment != null && fragment.isEmojiKeyboardVisible()) {
+      fragment.dismissEmojiKeyboard();
+    } else {
+      super.onBackPressed();
+    }
+  }
+
+  @Override
   public void onCameraError() {
     // TODO: Localize string
     Toast.makeText(this, "Camera unavailable.", Toast.LENGTH_SHORT).show();

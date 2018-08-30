@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
@@ -10,27 +11,34 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <LinearLayout
+    <RelativeLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:layout_gravity="center_horizontal|bottom"
-        android:gravity="center"
-        android:orientation="horizontal">
+        android:layout_gravity="bottom">
 
         <Button
             android:id="@+id/camera_capture_button"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Capture"/>
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true"
+            android:background="@drawable/camera_capture_button" />
 
-        <Button
+        <ImageButton
             android:id="@+id/camera_flip_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_toLeftOf="@id/camera_capture_button"
+            android:layout_toStartOf="@id/camera_capture_button"
+            android:layout_marginRight="40dp"
+            android:layout_marginEnd="40dp"
+            android:layout_centerVertical="true"
+            android:src="@drawable/quick_camera_front"
+            android:background="?selectableItemBackgroundBorderless"
             android:visibility="gone"
-            android:text="Flip"/>
+            tools:visibility="visible" />
 
-    </LinearLayout>
+    </RelativeLayout>
 
 </FrameLayout>

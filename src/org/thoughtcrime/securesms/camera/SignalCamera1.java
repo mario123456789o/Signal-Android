@@ -1,11 +1,9 @@
 package org.thoughtcrime.securesms.camera;
 
-import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.support.annotation.NonNull;
 import android.view.Surface;
-import android.view.TextureView;
 
 import org.thoughtcrime.securesms.logging.Log;
 
@@ -25,10 +23,10 @@ public class SignalCamera1 implements SignalCamera {
   private SurfaceTexture       previewSurface;
   private int                  screenRotation;
 
-  public SignalCamera1(@NonNull EventListener eventListener) {
+  public SignalCamera1(int preferredDirection, @NonNull EventListener eventListener) {
     this.eventListener = eventListener;
     this.enforcer      = new OrderEnforcer<>(Stage.INITIALIZED, Stage.PREVIEW_STARTED);
-    this.cameraId      = Camera.CameraInfo.CAMERA_FACING_BACK;
+    this.cameraId      = Camera.getNumberOfCameras() > 1  ? preferredDirection : Camera.CameraInfo.CAMERA_FACING_BACK;
   }
 
   @Override
@@ -39,6 +37,19 @@ public class SignalCamera1 implements SignalCamera {
 
     camera = Camera.open(cameraId);
 
+    Camera.Parameters  params     = camera.getParameters();
+    Camera.Size        maxSize    = getMaxSupportedPreviewSize(camera);
+    final List<String> focusModes = params.getSupportedFocusModes();
+
+    params.setPreviewSize(maxSize.width, maxSize.height);
+
+    if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
+      params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+    } else if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO)) {
+      params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
+    }
+
+    camera.setParameters(params);
 
     enforcer.markCompleted(Stage.INITIALIZED);
     eventListener.onCapabilitiesAvailable(getCapabilities());
@@ -59,12 +70,6 @@ public class SignalCamera1 implements SignalCamera {
     enforcer.run(Stage.INITIALIZED, () -> {
       try {
         previewSurface = surfaceTexture;
-
-        Camera.Parameters params  = camera.getParameters();
-        Camera.Size       maxSize = getMaxSupportedPreviewSize(camera);
-
-        params.setPreviewSize(maxSize.width, maxSize.height);
-        camera.setParameters(params);
 
         camera.setPreviewTexture(surfaceTexture);
         camera.startPreview();
@@ -91,7 +96,7 @@ public class SignalCamera1 implements SignalCamera {
   }
 
   @Override
-  public void flip() {
+  public int flip() {
     SurfaceTexture surfaceTexture = previewSurface;
     cameraId = (cameraId == Camera.CameraInfo.CAMERA_FACING_BACK) ? Camera.CameraInfo.CAMERA_FACING_FRONT : Camera.CameraInfo.CAMERA_FACING_BACK;
 
@@ -99,6 +104,8 @@ public class SignalCamera1 implements SignalCamera {
     initialize();
     linkSurface(surfaceTexture);
     setScreenRotation(screenRotation);
+
+    return cameraId;
   }
 
   @Override

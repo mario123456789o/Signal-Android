@@ -511,9 +511,13 @@ public class ConversationActivity extends PassphraseRequiredActionBarActivity
       int       subscriptionId = sendButton.getSelectedTransport().getSimSubscriptionId().or(-1);
       boolean   initiating     = threadId == -1;
 
+      if (isPush && !isSecureText) {
+        sendButton.setDefaultTransport(Type.TEXTSECURE);
+      }
+
       slideDeck.addSlide(new ImageSlide(this, data.getData(), imgSize, imgWidth, imgHeight));
 
-      sendMediaMessage(isSmsForced() || !isPush, message, slideDeck, Collections.emptyList(), expiresIn, subscriptionId, initiating);
+      sendMediaMessage(!isPush, message, slideDeck, Collections.emptyList(), expiresIn, subscriptionId, initiating);
       break;
     }
   }

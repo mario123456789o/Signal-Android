@@ -11,7 +11,7 @@ import java.io.IOException;
 public interface SignalCamera {
 
   @SuppressLint("MissingPermission")
-  static SignalCamera get(@NonNull Context context, @NonNull EventListener eventListener) {
+  static SignalCamera get(@NonNull Context context, int preferredDirection, @NonNull EventListener eventListener) {
 //    if (camera2Supported()) {
 //      try {
 //        return new SignalCamera2(context);
@@ -19,7 +19,7 @@ public interface SignalCamera {
 //        e.printStackTrace();
 //      }
 //    }
-    return new SignalCamera1(eventListener);
+    return new SignalCamera1(preferredDirection, eventListener);
   }
 
   void initialize();
@@ -32,7 +32,7 @@ public interface SignalCamera {
 
   void capture(@NonNull CaptureCompleteCallback callback);
 
-  void flip();
+  int flip();
 
   static boolean camera2Supported() {
     return Build.VERSION.SDK_INT >= 21;

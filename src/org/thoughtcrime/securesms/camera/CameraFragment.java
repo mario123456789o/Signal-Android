@@ -1,37 +1,48 @@
 package org.thoughtcrime.securesms.camera;
 
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.graphics.SurfaceTexture;
+import android.hardware.Camera;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.Button;
+import android.widget.ImageButton;
 
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.logging.Log;
 import org.thoughtcrime.securesms.providers.PersistentBlobProvider;
 import org.thoughtcrime.securesms.util.MediaUtil;
 import org.thoughtcrime.securesms.util.Stopwatch;
+import org.thoughtcrime.securesms.util.TextSecurePreferences;
 import org.thoughtcrime.securesms.util.concurrent.LifecycleBoundTask;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
-public class CameraFragment extends Fragment implements TextureView.SurfaceTextureListener, SignalCamera.EventListener {
+public class CameraFragment extends Fragment implements TextureView.SurfaceTextureListener,
+                                                        SignalCamera.EventListener
+{
 
   private static final String TAG = CameraFragment.class.getSimpleName();
 
-  private TextureView  cameraPreview;
-  private Button       flipButton;
-  private SignalCamera camera;
-  private Controller   controller;
+  private TextureView          cameraPreview;
+  private ImageButton          flipButton;
+  private SignalCamera         camera;
+  private Controller           controller;
+  private OrderEnforcer<Stage> orderEnforcer;
 
   public static CameraFragment newInstance() {
     return new CameraFragment();
@@ -44,8 +55,9 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
       throw new IllegalStateException("Parent activity must implement the Controller interface.");
     }
 
-    controller = (Controller) getActivity();
-    camera     = SignalCamera.get(getContext(), this);
+    controller    = (Controller) getActivity();
+    camera        = SignalCamera.get(getContext(), TextSecurePreferences.getDirectCaptureCameraId(getContext()), this);
+    orderEnforcer = new OrderEnforcer<>(Stage.VIEW_SIZE_AVAILABLE);
   }
 
   @Nullable
@@ -68,6 +80,7 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
       Stopwatch fastCaptureTimer = new Stopwatch("Fast Capture");
 
       captureButton.setEnabled(false);
+      orderEnforcer.reset();
 
       LifecycleBoundTask.run(getLifecycle(), () -> {
         fastCaptureTimer.split("capture");
@@ -108,6 +121,17 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
         });
       });
     });
+
+    cameraPreview.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+      @Override
+      public void onGlobalLayout() {
+        orderEnforcer.markCompleted(Stage.VIEW_SIZE_AVAILABLE);
+        cameraPreview.getViewTreeObserver().removeGlobalOnLayoutListener(this);
+      }
+    });
+
+    GestureDetector gestureDetector = new GestureDetector(gestureListener);
+    cameraPreview.setOnTouchListener((v, event) -> gestureDetector.onTouchEvent(event));
   }
 
   @Override
@@ -126,10 +150,37 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
   public void onCapabilitiesAvailable(@NonNull SignalCamera.Capabilities capabilities) {
     if (capabilities.getCameraCount() > 1) {
       flipButton.setVisibility(capabilities.getCameraCount() > 1 ? View.VISIBLE : View.GONE);
-      flipButton.setOnClickListener(v -> camera.flip());
+      flipButton.setOnClickListener(v ->  {
+        int newCameraId = camera.flip();
+        flipButton.setImageResource(newCameraId == Camera.CameraInfo.CAMERA_FACING_BACK ? R.drawable.quick_camera_front
+                                                                                        : R.drawable.quick_camera_rear);
+
+        TextSecurePreferences.setDirectCaptureCameraId(getContext(), newCameraId);
+      });
     } else {
       flipButton.setVisibility(View.GONE);
     }
+
+    orderEnforcer.run(Stage.VIEW_SIZE_AVAILABLE, () -> {
+      float camWidth   = isPortrait() ? Math.min(capabilities.previewWidth, capabilities.previewHeight) : Math.max(capabilities.previewWidth, capabilities.previewHeight);
+      float camHeight  = isPortrait() ? Math.max(capabilities.previewWidth, capabilities.previewHeight) : Math.min(capabilities.previewWidth, capabilities.previewHeight);
+      float viewWidth  = cameraPreview.getWidth();
+      float viewHeight = cameraPreview.getHeight();
+
+      float scaleX = 1;
+      float scaleY = 1;
+
+      if ((camWidth / viewWidth) > (camWidth / viewWidth)) {
+        scaleX = camWidth / viewWidth;
+      } else {
+        scaleY = camHeight / viewHeight;
+      }
+
+      Matrix matrix = new Matrix();
+      matrix.setScale(scaleX, scaleY);
+
+      cameraPreview.setTransform(matrix);
+    });
   }
 
   @Override
@@ -149,7 +200,6 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
 
   @Override
   public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-
   }
 
   @Override
@@ -161,6 +211,8 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
   public void onSurfaceTextureUpdated(SurfaceTexture surface) {
 
   }
+
+
 
   private byte[] processImage(@NonNull byte[] imgData, int imgWidth, int imgHeight) throws IOException {
     int surfaceWidth  = cameraPreview.getWidth();
@@ -218,10 +270,31 @@ public class CameraFragment extends Fragment implements TextureView.SurfaceTextu
     return os.toByteArray();
   }
 
+  private boolean isPortrait() {
+    return getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
+  }
+
+  private final GestureDetector.OnGestureListener gestureListener = new GestureDetector.SimpleOnGestureListener() {
+    @Override
+    public boolean onDown(MotionEvent e) {
+      return true;
+    }
+
+    @Override
+    public boolean onDoubleTap(MotionEvent e) {
+      flipButton.performClick();
+      return true;
+    }
+  };
+
   public interface Controller {
     void onCameraError();
     void onFastImageCaptured(@NonNull Uri uri);
     void onFullImageCaptured(@NonNull Uri uri);
     int getDisplayRotation();
+  }
+
+  private enum Stage {
+    VIEW_SIZE_AVAILABLE
   }
 }

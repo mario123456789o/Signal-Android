@@ -8,18 +8,25 @@ import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.AttributeSet;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import org.thoughtcrime.securesms.R;
 import org.thoughtcrime.securesms.TransportOption;
 import org.thoughtcrime.securesms.components.ComposeText;
+import org.thoughtcrime.securesms.components.InputAwareLayout;
 import org.thoughtcrime.securesms.components.SendButton;
+import org.thoughtcrime.securesms.components.emoji.EmojiDrawer;
+import org.thoughtcrime.securesms.components.emoji.EmojiToggle;
 import org.thoughtcrime.securesms.scribbles.widget.ColorPaletteAdapter;
 import org.thoughtcrime.securesms.scribbles.widget.VerticalSlideColorPicker;
 import org.thoughtcrime.securesms.util.CharacterCalculator.CharacterState;
+import org.thoughtcrime.securesms.util.ViewUtil;
+import org.thoughtcrime.securesms.util.views.Stub;
 import org.whispersystems.libsignal.util.guava.Optional;
 
 import java.util.Locale;
@@ -29,7 +36,7 @@ import java.util.Set;
  * The HUD (heads-up display) that contains all of the tools for interacting with
  * {@link org.thoughtcrime.securesms.scribbles.widget.ScribbleView}
  */
-public class ScribbleHud extends RelativeLayout {
+public class ScribbleHud extends InputAwareLayout {
 
   private View                     drawButton;
   private View                     highlightButton;
@@ -44,6 +51,8 @@ public class ScribbleHud extends RelativeLayout {
   private ComposeText              composeText;
   private SendButton               sendButton;
   private ViewGroup                sendButtonBkg;
+  private EmojiToggle              emojiToggle;
+  private Stub<EmojiDrawer>        emojiDrawer;
   private TextView                 charactersLeft;
 
   private EventListener       eventListener;
@@ -66,6 +75,7 @@ public class ScribbleHud extends RelativeLayout {
 
   private void initialize() {
     inflate(getContext(), R.layout.scribble_hud, this);
+    setOrientation(VERTICAL);
 
     drawButton      = findViewById(R.id.scribble_draw_button);
     highlightButton = findViewById(R.id.scribble_highlight_button);
@@ -80,6 +90,8 @@ public class ScribbleHud extends RelativeLayout {
     composeText     = findViewById(R.id.scribble_compose_text);
     sendButton      = findViewById(R.id.scribble_send_button);
     sendButtonBkg   = findViewById(R.id.scribble_send_button_bkg);
+    emojiToggle     = findViewById(R.id.scribble_emoji_toggle);
+    emojiDrawer     = new Stub<>(findViewById(R.id.scribble_emoji_drawer_stub));
     charactersLeft  = findViewById(R.id.scribble_characters_left);
 
     undoButton.setOnClickListener(v -> {
@@ -107,6 +119,29 @@ public class ScribbleHud extends RelativeLayout {
 
     colorPalette.setLayoutManager(new LinearLayoutManager(getContext()));
     colorPalette.setAdapter(colorPaletteAdapter);
+
+    emojiToggle.setOnClickListener(v -> {
+      if (!emojiDrawer.resolved()) {
+        emojiToggle.attach(emojiDrawer.get());
+        emojiDrawer.get().setEmojiEventListener(new EmojiDrawer.EmojiEventListener() {
+          @Override
+          public void onKeyEvent(KeyEvent keyEvent) {
+            composeText.dispatchKeyEvent(keyEvent);
+          }
+
+          @Override
+          public void onEmojiSelected(String emoji) {
+            composeText.insertEmoji(emoji);
+          }
+        });
+      }
+
+      if (getCurrentInput() == emojiDrawer.get()) {
+        showSoftkey(composeText);
+      } else {
+        show(composeText, emojiDrawer.get());
+      }
+    });
 
     sendButton.addOnTransportChangedListener((newTransport, manuallySelected) -> {
       presentCharactersRemaining();
@@ -306,6 +341,10 @@ public class ScribbleHud extends RelativeLayout {
       }
     }
   };
+
+  public void dismissEmojiKeyboard() {
+    hideCurrentInput(composeText);
+  }
 
   public enum Mode {
     NONE, DRAW, HIGHLIGHT, TEXT, STICKER

@@ -93,8 +93,8 @@ public class SignalCamera2 implements SignalCamera {
   }
 
   @Override
-  public void flip() {
-
+  public int flip() {
+    return 0;
   }
 
   private String getCameraId(@NonNull CameraManager cameraManager) {
