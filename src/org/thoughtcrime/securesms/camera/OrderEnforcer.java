@@ -3,7 +3,6 @@ package org.thoughtcrime.securesms.camera;
 import android.support.annotation.NonNull;
 
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;

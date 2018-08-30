@@ -11,6 +11,7 @@ import android.widget.Toast;
 
 import org.thoughtcrime.securesms.PassphraseRequiredActionBarActivity;
 import org.thoughtcrime.securesms.R;
+import org.whispersystems.libsignal.util.guava.Optional;
 
 @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
 public class ScribbleActivity extends PassphraseRequiredActionBarActivity implements ScribbleFragment.Controller {
@@ -24,7 +25,7 @@ public class ScribbleActivity extends PassphraseRequiredActionBarActivity implem
     setContentView(R.layout.scribble_activity);
 
     if (savedInstanceState == null) {
-      ScribbleFragment fragment = ScribbleFragment.newInstance(getIntent().getData());
+      ScribbleFragment fragment = ScribbleFragment.newInstance(getIntent().getData(), ScribbleComposeMode.NONE);
       getSupportFragmentManager().beginTransaction().add(R.id.fragment_container, fragment).commit();
     }
 
@@ -35,7 +36,7 @@ public class ScribbleActivity extends PassphraseRequiredActionBarActivity implem
   }
 
   @Override
-  public void onImageSaveSuccess(@NonNull Uri uri) {
+  public void onImageEditComplete(@NonNull Uri uri, int width, int height, long size, @NonNull Optional<String> message, boolean isPush) {
     Intent intent = new Intent();
     intent.setData(uri);
     setResult(RESULT_OK, intent);
@@ -44,7 +45,7 @@ public class ScribbleActivity extends PassphraseRequiredActionBarActivity implem
   }
 
   @Override
-  public void onImageSaveFailure() {
+  public void onImageEditFailure() {
     Toast.makeText(ScribbleActivity.this, R.string.ScribbleActivity_save_failure, Toast.LENGTH_SHORT).show();
     finish();
   }

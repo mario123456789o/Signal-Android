@@ -1,13 +1,18 @@
 package org.thoughtcrime.securesms.camera;
 
+import android.graphics.Rect;
+import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.support.annotation.NonNull;
 import android.view.Surface;
-import android.view.SurfaceView;
+import android.view.TextureView;
 
 import org.thoughtcrime.securesms.logging.Log;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 public class SignalCamera1 implements SignalCamera {
 
@@ -17,7 +22,7 @@ public class SignalCamera1 implements SignalCamera {
   private int                  cameraId;
   private OrderEnforcer<Stage> enforcer;
   private EventListener        eventListener;
-  private SurfaceView          previewSurface;
+  private SurfaceTexture       previewSurface;
   private int                  screenRotation;
 
   public SignalCamera1(@NonNull EventListener eventListener) {
@@ -32,7 +37,8 @@ public class SignalCamera1 implements SignalCamera {
       onCameraUnavailable();
     }
 
-    camera   = Camera.open(cameraId);
+    camera = Camera.open(cameraId);
+
 
     enforcer.markCompleted(Stage.INITIALIZED);
     eventListener.onCapabilitiesAvailable(getCapabilities());
@@ -49,12 +55,18 @@ public class SignalCamera1 implements SignalCamera {
   }
 
   @Override
-  public void linkSurface(@NonNull SurfaceView surface) {
+  public void linkSurface(@NonNull SurfaceTexture surfaceTexture) {
     enforcer.run(Stage.INITIALIZED, () -> {
       try {
-        previewSurface = surface;
+        previewSurface = surfaceTexture;
 
-        camera.setPreviewDisplay(surface.getHolder());
+        Camera.Parameters params  = camera.getParameters();
+        Camera.Size       maxSize = getMaxSupportedPreviewSize(camera);
+
+        params.setPreviewSize(maxSize.width, maxSize.height);
+        camera.setParameters(params);
+
+        camera.setPreviewTexture(surfaceTexture);
         camera.startPreview();
         enforcer.markCompleted(Stage.PREVIEW_STARTED);
       } catch (IOException e) {
@@ -67,23 +79,25 @@ public class SignalCamera1 implements SignalCamera {
   @Override
   public void capture(@NonNull CaptureCompleteCallback callback) {
     enforcer.run(Stage.PREVIEW_STARTED, () -> {
-      camera.takePicture(null, null, null, (bytes, camera) -> {
-        Camera.CameraInfo info = new Camera.CameraInfo();
+      camera.takePicture(null, null, (bytes, camera) -> {
+        Camera.Size       previewSize = camera.getParameters().getPictureSize();
+        Camera.CameraInfo info        = new Camera.CameraInfo();
+
         Camera.getCameraInfo(cameraId, info);
 
-        callback.onComplete(bytes, info.orientation);
+        callback.onComplete(bytes, previewSize.width, previewSize.height, info.orientation);
       });
     });
   }
 
   @Override
   public void flip() {
-    SurfaceView surfaceView = previewSurface;
+    SurfaceTexture surfaceTexture = previewSurface;
     cameraId = (cameraId == Camera.CameraInfo.CAMERA_FACING_BACK) ? Camera.CameraInfo.CAMERA_FACING_FRONT : Camera.CameraInfo.CAMERA_FACING_BACK;
 
     release();
     initialize();
-    linkSurface(surfaceView);
+    linkSurface(surfaceTexture);
     setScreenRotation(screenRotation);
   }
 
@@ -107,7 +121,14 @@ public class SignalCamera1 implements SignalCamera {
   }
 
   private Capabilities getCapabilities() {
-    return new Capabilities(Camera.getNumberOfCameras());
+    Camera.Size previewSize = camera.getParameters().getPreviewSize();
+    return new Capabilities(Camera.getNumberOfCameras(), previewSize.width, previewSize.height);
+  }
+
+  private Camera.Size getMaxSupportedPreviewSize(Camera camera) {
+    List<Camera.Size> cameraSizes = camera.getParameters().getSupportedPreviewSizes();
+    Collections.sort(cameraSizes, DESC_SIZE_COMPARATOR);
+    return cameraSizes.get(0);
   }
 
   private int getCameraRotationForScreen(int screenRotation) {
@@ -129,6 +150,8 @@ public class SignalCamera1 implements SignalCamera {
       return (info.orientation - degrees + 360) % 360;
     }
   }
+
+  private final Comparator<Camera.Size> DESC_SIZE_COMPARATOR = (o1, o2) -> Integer.compare(o2.width * o2.height, o1.width * o1.height);
 
   private enum Stage {
     INITIALIZED, PREVIEW_STARTED

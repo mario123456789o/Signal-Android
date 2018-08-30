@@ -1,21 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
 <merge
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto">
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:parentTag="android.widget.RelativeLayout">
 
     <ImageView
         android:id="@+id/scribble_save_button"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="top|left"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentStart="true"
         android:src="@drawable/ic_check_white_24dp"
         android:padding="12dp"
         android:background="?attr/selectableItemBackgroundBorderless"/>
 
     <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:layout_gravity="right|top"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
+        android:layout_above="@+id/scribble_compose_container"
         android:orientation="vertical"
         android:animateLayoutChanges="true">
 
@@ -86,4 +95,96 @@
 
     </LinearLayout>
 
+    <RelativeLayout
+        android:id="@+id/scribble_compose_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="6dp"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:paddingLeft="10dp"
+        android:paddingStart="10dp"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:layout_toLeftOf="@+id/scribble_send_button_bkg"
+            android:layout_toStartOf="@+id/scribble_send_button_bkg"
+            android:layout_above="@+id/scribble_characters_left"
+            android:layout_alignWithParentIfMissing="true"
+            android:orientation="horizontal"
+            android:background="@drawable/compose_background_camera">
+
+            <org.thoughtcrime.securesms.components.emoji.EmojiToggle
+                android:layout_width="wrap_content"
+                android:layout_height="@dimen/conversation_compose_height"
+                android:layout_gravity="bottom"
+                android:paddingLeft="4dp"
+                android:paddingStart="4dp"
+                android:paddingRight="6dp"
+                android:paddingEnd="6dp"
+                android:background="?selectableItemBackgroundBorderless"
+                android:contentDescription="@string/conversation_activity__emoji_toggle_description" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="@dimen/conversation_compose_height" />
+
+            <org.thoughtcrime.securesms.components.ComposeText
+                style="@style/ComposeEditText"
+                android:id="@+id/scribble_compose_text"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center_vertical"
+                android:layout_weight="1"
+                android:nextFocusForward="@+id/send_button"
+                android:nextFocusRight="@+id/send_button"
+                tools:visibility="invisible"
+                tools:hint="Send TextSecure message" />
+
+        </LinearLayout>
+
+        <FrameLayout
+            android:id="@+id/scribble_send_button_bkg"
+            android:layout_width="@dimen/conversation_compose_height"
+            android:layout_height="@dimen/conversation_compose_height"
+            android:layout_marginLeft="12dp"
+            android:layout_marginStart="12dp"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentEnd="true"
+            android:background="@drawable/circle_tintable"
+            tools:backgroundTint="@color/core_blue">
+
+            <org.thoughtcrime.securesms.components.SendButton
+                android:id="@+id/scribble_send_button"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:paddingTop="6dp"
+                android:paddingRight="6dp"
+                android:paddingBottom="6dp"
+                android:paddingLeft="11dp"
+                android:scaleType="fitCenter"
+                android:contentDescription="@string/conversation_activity__send"
+                android:src="?conversation_transport_sms_indicator"
+                android:background="@drawable/circle_touch_highlight_background" />
+
+        </FrameLayout>
+
+        <TextView
+            android:id="@+id/scribble_characters_left"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentStart="true"
+            android:visibility="gone"
+            tools:visibility="visible"
+            tools:text="160/160 (1)" />
+
+    </RelativeLayout>
 </merge>

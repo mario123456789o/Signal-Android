@@ -3,6 +3,7 @@ package org.thoughtcrime.securesms.camera;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.graphics.SurfaceTexture;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -12,7 +13,9 @@ import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.support.annotation.NonNull;
 import android.support.annotation.RequiresPermission;
+import android.view.Surface;
 import android.view.SurfaceView;
+import android.view.TextureView;
 
 import java.util.Collections;
 
@@ -58,9 +61,9 @@ public class SignalCamera2 implements SignalCamera {
   }
 
   @Override
-  public void linkSurface(@NonNull SurfaceView surface) {
+  public void linkSurface(@NonNull SurfaceTexture surface) {
     try {
-      camera.createCaptureSession(Collections.singletonList(surface.getHolder().getSurface()), new CameraCaptureSession.StateCallback() {
+      camera.createCaptureSession(Collections.singletonList(new Surface(surface)), new CameraCaptureSession.StateCallback() {
         @Override
         public void onConfigured(@NonNull CameraCaptureSession session) {
           try {

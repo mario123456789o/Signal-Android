@@ -2,9 +2,9 @@ package org.thoughtcrime.securesms.camera;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.graphics.SurfaceTexture;
 import android.os.Build;
 import android.support.annotation.NonNull;
-import android.view.SurfaceView;
 
 import java.io.IOException;
 
@@ -26,7 +26,7 @@ public interface SignalCamera {
 
   void release();
 
-  void linkSurface(@NonNull SurfaceView surface) throws IOException;
+  void linkSurface(@NonNull SurfaceTexture surfaceTexture) throws IOException;
 
   void setScreenRotation(int rotation);
 
@@ -39,7 +39,7 @@ public interface SignalCamera {
   }
 
   interface CaptureCompleteCallback {
-    void onComplete(@NonNull byte[] data, int rotation);
+    void onComplete(@NonNull byte[] data, int width, int height, int rotation);
   }
 
   class CameraUnavailableException extends Exception {
@@ -51,9 +51,13 @@ public interface SignalCamera {
   class Capabilities {
 
     final int cameraCount;
+    final int previewWidth;
+    final int previewHeight;
 
-    public Capabilities(int cameraCount) {
-      this.cameraCount = cameraCount;
+    public Capabilities(int cameraCount, int previewWidth, int previewHeight) {
+      this.cameraCount   = cameraCount;
+      this.previewWidth  = previewWidth;
+      this.previewHeight = previewHeight;
     }
 
     int getCameraCount() {
